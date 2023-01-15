@@ -130,7 +130,7 @@ server.listen(PORT, () => {
 })
 
 function initRooms() {
-    const roomNames = ['D5', 'D6', 'D7', 'Cafeteria', 'Côn Sơn', 'Trường Sa', 'Hoàng Sa', 'Cát Bà', 'Kid room']
+    const roomNames = ['D5', 'D6', 'D7', 'Cafeteria', 'Côn Sơn', 'Trường Sa', 'Hoàng Sa', 'Cát Bà', 'WC']
     const roomList = []
     for (let i = 1; i <= 9; i++) {
         const room = {
