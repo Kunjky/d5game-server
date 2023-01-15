@@ -4,6 +4,7 @@ const http = require('http')
 const cors = require('cors')
 const { Server } = require('socket.io')
 const path = require('path');
+const fs = require('fs');
 
 require('dotenv').config()
 
@@ -12,7 +13,7 @@ const PORT = process.env.PORT
 app.use(express.static(path.join(__dirname, 'build')));
 
 app.get('/', function (req, res) {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 const server = http.createServer(app)
@@ -41,13 +42,13 @@ io.on('connection', (socket) => {
 
     socket.on('user:join-room', (roomId) => {
         let room = roomList.find(room => room.id == roomId)
-
-        if (room.players.length < 2 && socket.rooms.size == 1) {
+        if (room.players.length <= 1 && socket.rooms.size == 1) {
             socket.join(parseInt(room.id))
             room.players.push(socket.id)
-        }
 
-        io.emit('room:updated', [...roomList])
+            io.to(roomId).emit('room:join-room-success', room)
+            io.emit('room:updated', [...roomList])
+        }
     })
 
     socket.on('user:left-room', (roomId) => {
@@ -56,11 +57,7 @@ io.on('connection', (socket) => {
             socket.leave(roomId)
             io.emit('room:updated', [...roomList])
         }
-
-        io.emit('room:updated', [...roomList])
     })
-
-
 
     io.of("/").adapter.on("create-room", (room) => {
         // console.log(`room ${room} was created`);
@@ -119,6 +116,10 @@ io.on('connection', (socket) => {
     socket.on('addScore', (data, roomId) => {
         io.to(roomId).emit('addScore', data)
     })
+
+    socket.on('resetGame', (data, roomId) => {
+        io.to(roomId).emit('resetGame', data)
+    })
 })
 
 app.use(cors())
@@ -129,13 +130,13 @@ server.listen(PORT, () => {
 })
 
 function initRooms() {
-    const roomNames = ['D5', 'D6', 'D7', 'Cafeteria', 'Côn Sơn', 'Trường Sa', 'Hoàng Sa', 'Cát Bà', '2023']
+    const roomNames = ['D5', 'D6', 'D7', 'Cafeteria', 'Côn Sơn', 'Trường Sa', 'Hoàng Sa', 'Cát Bà', 'Kid room']
     const roomList = []
     for (let i = 1; i <= 9; i++) {
         const room = {
             id: i,
             players: [],
-            name: roomNames[i-1],
+            name: roomNames[i - 1],
         }
 
         roomList.push(room)
@@ -144,24 +145,22 @@ function initRooms() {
     return roomList
 }
 
-const cardImages = [
-    { "src": "/img/helmet-1.png", "matched": false },
-    { "src": "/img/potion-1.png", "matched": false },
-    // { "src": "/img/ring-1.png", "matched": false },
-    // { "src": "/img/scroll-1.png", "matched": false },
-    // { "src": "/img/shield-1.png", "matched": false },
-    // { "src": "/img/sword-1.png", "matched": false },
-    // { "src": "/img/helmet-1.png", "matched": false },
-    // { "src": "/img/potion-1.png", "matched": false },
-    // { "src": "/img/ring-1.png", "matched": false },
-    // { "src": "/img/scroll-1.png", "matched": false },
-    // { "src": "/img/shield-1.png", "matched": false },
-    // { "src": "/img/sword-1.png", "matched": false },
-]
-
 function shuffleCards() {
+    const LIMIT_CARDS = 12
+    const avatarFolder = path.join(__dirname, 'build', 'cards')
+    let cardImages = [];
+    fs.readdirSync(avatarFolder).forEach(file => {
+        cardImages.push({
+            src: path.join('/cards', file),
+            matched: false
+        })
+    });
+    cardImages = cardImages.sort(() => Math.random() - 0.5)
+        .slice(0, LIMIT_CARDS)
+
     const shuffledCards = [...cardImages, ...cardImages]
         .sort(() => Math.random() - 0.5)
-        .map((card,index) => ({ ...card, id: index }))
+        .map((card, index) => ({ ...card, id: index + 1 }))
+
     return shuffledCards;
 }
