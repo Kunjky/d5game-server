@@ -27,6 +27,7 @@ const io = new Server(server, {
 
 
 const roomList = [...initRooms()]
+io.sockets.setMaxListeners(100)
 
 io.on('connection', (socket) => {
     console.log('User connected: ', socket.id)
